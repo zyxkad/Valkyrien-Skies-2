@@ -51,14 +51,18 @@ import org.valkyrienskies.mod.util.ClientConnectivityUpdateQueue;
 public abstract class MixinClientChunkCache implements ClientChunkCacheDuck {
     @Shadow
     @Final
+    private LevelChunk emptyChunk;
+
+    @Shadow
+    @Final
     public ClientLevel level;
+
+    @Unique
+    private final LongObjectMap<LevelChunk> vs$shipChunks = new LongObjectHashMap<>();
 
     public LongObjectMap<LevelChunk> vs$getShipChunks() {
         return vs$shipChunks;
     }
-
-    @Unique
-    private final LongObjectMap<LevelChunk> vs$shipChunks = new LongObjectHashMap<>();
 
     @Inject(method = "replaceWithPacketData", at = @At("HEAD"), cancellable = true)
     private void preLoadChunkFromPacket(final int x, final int z,
@@ -207,6 +211,10 @@ public abstract class MixinClientChunkCache implements ClientChunkCacheDuck {
         final boolean bl,
         final CallbackInfoReturnable<LevelChunk> cir
     ) {
+        final LevelChunk returnValue = cir.getReturnValue();
+        if (returnValue != this.emptyChunk && returnValue != null) {
+            return;
+        }
         if (!VSGameUtilsKt.isChunkInShipyard(this.level, chunkX, chunkZ)) {
             return;
         }
